@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparador de Preços Inteligente 2026</title>
+    <style>
+        /* Reset de box-sizing para evitar quebras de layout */
+        * { box-sizing: border-box; }
+
+        :root { --primary: #27ae60; --dark: #2c3e50; --light: #ecf0f1; --accent: #3498db; }
+        
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--light); margin: 0; padding: 20px; color: var(--dark); }
+        
+        .container { 
+            max-width: 900px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        h1 { text-align: center; font-size: 1.8rem; margin-bottom: 30px; }
+        
+        .setup-area { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input { padding: 12px; border: 2px solid #eee; border-radius: 8px; flex: 1; min-width: 180px; outline: none; }
+        input:focus { border-color: var(--primary); }
+        
+        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-market { background: var(--accent); color: white; }
+        .btn-calc { background: var(--dark); color: white; width: 100%; margin-top: 20px; font-size: 1.1rem; }
+        
+        .action-buttons { display: flex; gap: 10px; margin-top: 25px; }
+        .btn-print { background: #7f8c8d; color: white; flex: 1; }
+        .btn-share { background: #f39c12; color: white; flex: 1; }
+
+        .table-wrapper { overflow-x: auto; margin-top: 25px; border: 1px solid #eee; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
+        th { background: #f8f9fa; }
+        .product-name { text-align: left; font-weight: bold; background: #fff; }
+        
+        .price-input { width: 100%; max-width: 80px; text-align: center; border: 1px solid #ddd; padding: 5px; border-radius: 4px; }
+        .best-price { background: #d4edda !important; border: 2px solid #28a745 !important; }
+        
+        .result-area { margin-top: 30px; padding: 25px; background: #fff; border-radius: 12px; border: 2px solid var(--primary); }
+        .market-group { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 5px solid var(--accent); }
+        .market-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        
+        footer { text-align: center; margin-top: 50px; padding: 20px; color: #7f8c8d; font-size: 0.9rem; border-top: 1px solid #eee; }
+
+        /* AJUSTES ESPECÍFICOS PARA IMPRESSÃO / PDF */
+        @media print {
+            @page { margin: 1.5cm; } /* Garante margem física no papel */
+            
+            body { background: white !important; padding: 0 !important; }
+            .container { 
+                box-shadow: none !important; 
+                width: 98% !important; 
+                max-width: 98% !important; 
+                margin: 0 auto !important; 
+                padding: 0 !important;
+            }
+            
+            .setup-area, .btn-calc, .action-buttons, .table-wrapper { display: none !important; }
+            
+            .result-area { 
+                border: none !important; 
+                padding: 0 !important; 
+                display: block !important;
+            }
+            
+            .market-group { 
+                border: 1px solid #eee !important; 
+                border-left: 5px solid #333 !important;
+                page-break-inside: avoid; 
+                width: 100% !important;
+            }
+
+            .market-title span { color: #000 !important; }
+            
+            footer { 
+                position: relative; 
+                margin-top: 30px; 
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛒 Comparador de Preços 2026</h1>
+    
+    <div class="setup-area">
+        <input type="text" id="productInput" placeholder="Produto (Ex: Arroz 5kg)">
+        <button class="btn-add" onclick="addProduct()">+ Item</button>
+    </div>
+
+    <div class="setup-area">
+        <input type="text" id="marketInput" placeholder="Mercado (Ex: Extra)">
+        <button class="btn-market" onclick="addMarket()">+ Mercado</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr id="headerRow"><th>Lista de Compras</th></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <button class="btn-calc" onclick="calculateBestOption()">📊 Gerar Roteiro por Mercado</button>
+
+    <div id="results" class="result-area" style="display:none;">
+        <h3 style="margin-top:0;">✅ Itens Recomendados por Estabelecimento:</h3>
+        <div id="marketResults"></div>
+        <div id="grandTotalArea" style="text-align: right; font-size: 1.2rem; margin-top: 20px; font-weight: bold;"></div>
+
+        <div class="action-buttons">
+            <button class="btn-print" onclick="window.print()">🖨️ Gerar PDF / Imprimir</button>
+            <button class="btn-share" onclick="shareList()">📱 Compartilhar</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    Produto desenvolvido por <strong>Victor Alves</strong> &copy; 2026
+</footer>
+
+<script>
+    let products = [];
+    let markets = [];
+
+    function addProduct() {
+        const input = document.getElementById('productInput');
+        if (input.value.trim() === "") return;
+        products.push(input.value);
+        renderTable();
+        input.value = "";
+        input.focus();
+    }
+
+    function addMarket() {
+        const input = document.getElementById('marketInput');
+        if (input.value.trim() === "") return;
+        markets.push(input.value);
+        renderTable();
+        input.value = "";
+        input.focus();
+    }
+
+    function renderTable() {
+        const headerRow = document.getElementById('headerRow');
+        const tableBody = document.getElementById('tableBody');
+        headerRow.innerHTML = '<th>Lista de Compras</th>' + markets.map(m => `<th>${m}</th>`).join('');
+        
+        tableBody.innerHTML = products.map((p, pIdx) => `
+            <tr>
+                <td class="product-name">${p}</td>
+                ${markets.map((m, mIdx) => `
+                    <td><input type="number" class="price-input" data-pidx="${pIdx}" data-midx="${mIdx}" placeholder="0,00" step="0.01" oninput="highlightBest(${pIdx})"></td>
+                `).join('')}
+            </tr>
+        `).join('');
+    }
+
+    function highlightBest(pIdx) {
+        const inputs = document.querySelectorAll(`input[data-pidx="${pIdx}"]`);
+        let minPrice = Infinity;
+        inputs.forEach(i => {
+            i.classList.remove('best-price');
+            let val = parseFloat(i.value);
+            if (val > 0 && val < minPrice) minPrice = val;
+        });
+        inputs.forEach(i => {
+            if (parseFloat(i.value) === minPrice && minPrice !== Infinity) i.classList.add('best-price');
+        });
+    }
+
+    function calculateBestOption() {
+        const marketResultsDiv = document.getElementById('marketResults');
+        const resultsArea = document.getElementById('results');
+        let grandTotal = 0;
+        let marketGroups = {};
+
+        markets.forEach(m => marketGroups[m] = { items: [], total: 0 });
+
+        products.forEach((p, pIdx) => {
+            const inputs = document.querySelectorAll(`input[data-pidx="${pIdx}"]`);
+            let bestVal = Infinity;
+            let bestMIdx = -1;
+
+            inputs.forEach((input, mIdx) => {
+                let val = parseFloat(input.value);
+                if (val > 0 && val < bestVal) {
+                    bestVal = val;
+                    bestMIdx = mIdx;
+                }
+            });
+
+            if (bestMIdx !== -1) {
+                marketGroups[markets[bestMIdx]].items.push({ name: p, price: bestVal });
+                marketGroups[markets[bestMIdx]].total += bestVal;
+                grandTotal += bestVal;
+            }
+        });
+
+        marketResultsDiv.innerHTML = "";
+        for (const m in marketGroups) {
+            if (marketGroups[m].items.length > 0) {
+                marketResultsDiv.innerHTML += `
+                    <div class="market-group">
+                        <div class="market-title">
+                            <span>${m}</span>
+                            <span>Subtotal: R$ ${marketGroups[m].total.toFixed(2)}</span>
+                        </div>
+                        ${marketGroups[m].items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>• ${i.name}</span><span>R$ ${i.price.toFixed(2)}</span></div>`).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        document.getElementById('grandTotalArea').innerHTML = `Total Geral: R$ ${grandTotal.toFixed(2)}`;
+        resultsArea.style.display = "block";
+        window.scrollTo({ top: resultsArea.offsetTop, behavior: 'smooth' });
+    }
+
+    async function shareList() {
+        let text = `🛒 *Meu Roteiro de Compras 2026*\n\n`;
+        const groups = document.querySelectorAll('.market-group');
+        groups.forEach(g => {
+            text += `📍 *${g.querySelector('.market-title span:first-child').innerText}*\n`;
+            g.querySelectorAll('div:not(.market-title)').forEach(l => text += `${l.innerText}\n`);
+            text += `Total no mercado: ${g.querySelector('.market-title span:last-child').innerText}\n\n`;
+        });
+        text += document.getElementById('grandTotalArea').innerText;
+
+        if (navigator.share) {
+            await navigator.share({ title: 'Lista de Compras', text: text });
+        } else {
+            navigator.clipboard.writeText(text);
+            alert("Lista copiada!");
+        }
+    }
+</script>
+
+</body>
+</html>
