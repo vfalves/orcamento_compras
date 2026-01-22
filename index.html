@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparador de Preços Eco-Sustentável 2026</title>
+    <style>
+        :root { --primary: #27ae60; --dark: #2c3e50; --light: #ecf0f1; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: var(--dark); text-align: center; font-size: 1.5rem; }
+        
+        .setup-area { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 150px; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-calc { background: var(--dark); color: white; width: 100%; margin-top: 20px; font-size: 1.1rem; }
+
+        .table-wrapper { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
+        th { background: #f8f9fa; color: var(--dark); }
+        .product-name { text-align: left; font-weight: bold; background: #fff; }
+        
+        .best-price { background: #d4edda !important; color: #155724; font-weight: bold; border: 2px solid #28a745; }
+        .result-area { margin-top: 30px; padding: 20px; background: #eef2f3; border-radius: 8px; }
+        .market-badge { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 0.85rem; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛒 Comparador de Preços Inteligente</h1>
+    
+    <div class="setup-area">
+        <input type="text" id="productInput" placeholder="Nome do Produto (Ex: Arroz 5kg)">
+        <button class="btn-add" onclick="addProduct()">+ Adicionar Item</button>
+    </div>
+
+    <div class="setup-area">
+        <input type="text" id="marketInput" placeholder="Nome do Supermercado">
+        <button class="btn-add" onclick="addMarket()" style="background: #3498db;">+ Adicionar Mercado</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="priceTable">
+            <thead>
+                <tr id="headerRow">
+                    <th style="width: 30%;">Lista de Compras</th>
+                    <!-- Colunas dos mercados entrarão aqui -->
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Linhas dos produtos entrarão aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <button class="btn-calc" onclick="calculateBestOption()">Gerar Melhor Orçamento</button>
+
+    <div id="results" class="result-area" style="display:none;">
+        <h3>✅ Recomendação de Compra:</h3>
+        <ul id="recommendationList"></ul>
+        <hr>
+        <p id="totalSaving"></p>
+    </div>
+</div>
+
+<script>
+    let products = [];
+    let markets = [];
+
+    function addProduct() {
+        const input = document.getElementById('productInput');
+        if (input.value.trim() === "") return;
+        
+        products.push(input.value);
+        renderTable();
+        input.value = "";
+    }
+
+    function addMarket() {
+        const input = document.getElementById('marketInput');
+        if (input.value.trim() === "") return;
+        
+        markets.push(input.value);
+        renderTable();
+        input.value = "";
+    }
+
+    function renderTable() {
+        const headerRow = document.getElementById('headerRow');
+        const tableBody = document.getElementById('tableBody');
+
+        // Atualiza Cabeçalho
+        headerRow.innerHTML = '<th>Lista de Compras</th>';
+        markets.forEach(m => {
+            headerRow.innerHTML += `<th>${m}</th>`;
+        });
+
+        // Atualiza Linhas
+        tableBody.innerHTML = '';
+        products.forEach((p, pIdx) => {
+            let row = `<tr><td class="product-name">${p}</td>`;
+            markets.forEach((m, mIdx) => {
+                row += `<td><input type="number" class="price-input" 
+                           data-pidx="${pIdx}" data-midx="${mIdx}" 
+                           placeholder="R$ 0,00" step="0.01" 
+                           oninput="highlightBest(${pIdx})"></td>`;
+            });
+            row += `</tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function highlightBest(pIdx) {
+        const inputs = document.querySelectorAll(`input[data-pidx="${pIdx}"]`);
+        let minPrice = Infinity;
+        
+        inputs.forEach(input => {
+            input.classList.remove('best-price');
+            let val = parseFloat(input.value);
+            if (val > 0 && val < minPrice) minPrice = val;
+        });
+
+        inputs.forEach(input => {
+            if (parseFloat(input.value) === minPrice) {
+                input.classList.add('best-price');
+            }
+        });
+    }
+
+    function calculateBestOption() {
+        const list = document.getElementById('recommendationList');
+        const resultsArea = document.getElementById('results');
+        list.innerHTML = "";
+        let grandTotal = 0;
+
+        products.forEach((p, pIdx) => {
+            const inputs = document.querySelectorAll(`input[data-pidx="${pIdx}"]`);
+            let bestVal = Infinity;
+            let bestMarket = "";
+
+            inputs.forEach((input, mIdx) => {
+                let val = parseFloat(input.value);
+                if (val > 0 && val < bestVal) {
+                    bestVal = val;
+                    bestMarket = markets[mIdx];
+                }
+            });
+
+            if (bestVal !== Infinity) {
+                list.innerHTML += `<li><strong>${p}</strong>: Comprar no <u>${bestMarket}</u> por <b>R$ ${bestVal.toFixed(2)}</b></li>`;
+                grandTotal += bestVal;
+            }
+        });
+
+        document.getElementById('totalSaving').innerHTML = `<strong>Total do Carrinho Econômico: R$ ${grandTotal.toFixed(2)}</strong>`;
+        resultsArea.style.display = "block";
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+</script>
+
+</body>
+</html>
